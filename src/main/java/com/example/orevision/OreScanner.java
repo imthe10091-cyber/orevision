@@ -14,15 +14,6 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Periodically scans loaded chunks around the player for configured ore blocks
- * and caches their positions + colors for the ESP renderer to draw.
- *
- * VERIFY: written against the documented Mojang-mapping class names for 26.2
- * (LevelChunk / LevelChunkSection / ClientLevel / BlockPos / BuiltInRegistries).
- * These match Fabric's official porting docs as of writing, but double check
- * against your IDE's autocomplete if something doesn't resolve.
- */
 public class OreScanner {
 
     private static volatile Map<BlockPos, Integer> foundOres = new HashMap<>();
@@ -60,7 +51,9 @@ public class OreScanner {
             if (!entry.getValue()) continue;
             Identifier id = Identifier.tryParse(entry.getKey());
             if (id == null) continue;
-            Block block = BuiltInRegistries.BLOCK.get(id);
+            // NOTE: BuiltInRegistries.BLOCK.get(id) now returns Optional<Reference<Block>>.
+            // getValue(id) is the direct nullable-Block accessor.
+            Block block = BuiltInRegistries.BLOCK.getValue(id);
             if (block == null) continue;
             String colorHex = config.oreColors.getOrDefault(entry.getKey(), "#FFFFFF");
             targets.put(block, parseColor(colorHex));
@@ -77,7 +70,9 @@ public class OreScanner {
         int pcz = playerPos.getZ() >> 4;
 
         Map<BlockPos, Integer> results = new HashMap<>();
-        int bottomSection = level.getMinSection();
+        // NOTE: getMinSection() doesn't exist on ClientLevel in 26.2 - derive
+        // the bottom section coordinate from getMinY() instead (16 blocks/section).
+        int bottomSection = level.getMinY() >> 4;
 
         for (int cx = -radius; cx <= radius; cx++) {
             for (int cz = -radius; cz <= radius; cz++) {
