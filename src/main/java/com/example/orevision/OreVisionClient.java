@@ -15,14 +15,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.repository.PackRepository;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class OreVisionClient implements ClientModInitializer {
 
     public static final String MOD_ID = "orevision";
     public static final ModState STATE = new ModState();
     public static ModConfig CONFIG;
 
-    // Matches the "resourcepacks/<id path>" convention Fabric API's
-    // registerBuiltinResourcePack expects inside the mod jar.
     private static final Identifier XRAY_PACK_ID = Identifier.fromNamespaceAndPath(MOD_ID, "orevision_xray");
     private static final String XRAY_PACK_PROFILE = "builtin/" + XRAY_PACK_ID.getPath();
 
@@ -92,21 +93,22 @@ public class OreVisionClient implements ClientModInitializer {
     }
 
     /**
-     * Enables/disables the bundled X-ray resource pack and triggers a resource reload.
-     * VERIFY: PackRepository.enable/disable(String) is written against the most
-     * recently documented Mojang names for this class. If these don't resolve,
-     * check your IDE's autocomplete on Minecraft.getInstance().getResourcePackRepository()
-     * for the current enable/disable or getSelectedIds()/setSelected() methods.
+     * PackRepository has no enable()/disable() in 26.2 - toggle membership in
+     * the selected-ids list instead and let setSelected() apply it.
      */
     private void applyXrayPackState(Minecraft client) {
         PackRepository repository = client.getResourcePackRepository();
+        List<String> selected = new ArrayList<>(repository.getSelectedIds());
 
         if (STATE.xrayEnabled) {
-            repository.enable(XRAY_PACK_PROFILE);
+            if (!selected.contains(XRAY_PACK_PROFILE)) {
+                selected.add(XRAY_PACK_PROFILE);
+            }
         } else {
-            repository.disable(XRAY_PACK_PROFILE);
+            selected.remove(XRAY_PACK_PROFILE);
         }
 
+        repository.setSelected(selected);
         client.reloadResourcePacks();
     }
 
