@@ -7,7 +7,6 @@
   "authors": ["You"],
   "contact": {},
   "license": "MIT",
-  "icon": null,
   "environment": "client",
   "entrypoints": {
     "client": [
